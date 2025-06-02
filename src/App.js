@@ -3,11 +3,13 @@ import "./App.css";
 import AssetTable from "./components/AssetTable";
 import AssetAnalysis from "./components/AssetAnalysis";
 import LoginModal from "./components/LoginModal";
+import FeedbackModal from "./components/FeedbackModal";
 import { useAuth } from "./contexts/AuthContext";
 
 function App() {
   const [tab, setTab] = useState("portfolio");
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const { user, signOut } = useAuth();
   return (
     <>
@@ -34,25 +36,31 @@ function App() {
               </div>
               <div className="navbar-right">
                 {user ? (
-                  <div className="user-profile">
-                    <div className="user-avatar">
-                      {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                  <div className="user-profile-bar">
+                    <div className="user-profile">
+                      <div className="user-avatar">
+                        {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                      </div>
+                      <div className="user-details">
+                        <span className="user-email">{user.email}</span>
+                        <button className="sign-out-btn" onClick={signOut}>
+                          Sign Out
+                        </button>
+                      </div>
                     </div>
-                    <div className="user-details">
-                      <span className="user-email">{user.email}</span>
-                      <button className="sign-out-btn" onClick={signOut}>
-                        Sign Out
-                      </button>
-                    </div>
+                    <button className="feedback-btn-navbar" onClick={() => setShowFeedbackModal(true)}>Feedback</button>
                   </div>
                 ) : (
-                  <button 
-                    className="sign-in-btn" 
-                    onClick={() => setShowLoginModal(true)}
-                    aria-label="Sign in with Google"
-                  >
-                    Sign In / Sign Up
-                  </button>
+                  <>
+                    <button 
+                      className="sign-in-btn" 
+                      onClick={() => setShowLoginModal(true)}
+                      aria-label="Sign in with Google"
+                    >
+                      Sign In / Sign Up
+                    </button>
+                    <button className="feedback-btn-navbar" onClick={() => setShowFeedbackModal(true)}>Feedback</button>
+                  </>
                 )}
               </div>
             </div>
@@ -68,11 +76,16 @@ function App() {
         <main>
           {tab === "portfolio" ? <AssetTable /> : <AssetAnalysis />}
         </main>
-        <button className="feedback-btn">Feedback</button>
+
         <LoginModal 
           isOpen={showLoginModal} 
           onClose={() => setShowLoginModal(false)} 
         />
+        <FeedbackModal 
+          open={showFeedbackModal} 
+          onClose={() => setShowFeedbackModal(false)} 
+        />
+        {/* TODO: src/components/FeedbackModal.js 파일에서 Supabase URL과 anon key를 입력하세요. */}
       </div>
       <footer className="footer">&copy; 2025 Porteezy</footer>
       <style jsx global>{`

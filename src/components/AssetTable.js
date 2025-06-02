@@ -14,6 +14,23 @@ const initialAssets = [
 ];
 
 export default function AssetTable() {
+  const [showAddRow, setShowAddRow] = useState(false);
+  // Tooltip state for ticker full name
+  const [assetTooltip, setAssetTooltip] = useState({});
+
+  // Expose tooltip setter/getter globally for AssetRow
+  window.assetTooltip = assetTooltip;
+  window.setAssetTooltip = (id, tooltipObj) => {
+    setAssetTooltip(prev => {
+      if (!tooltipObj) {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      }
+      return { ...prev, [id]: tooltipObj };
+    });
+  };
+
   const [assets, setAssets] = useState(initialAssets);
   const [cash, setCash] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -133,7 +150,10 @@ export default function AssetTable() {
 
         if (data) {
           // Initialize with user's data
-          setAssets(Array.isArray(data.assets) && data.assets.length > 0 ? data.assets : initialAssets);
+          const validAssets = Array.isArray(data.assets)
+  ? data.assets.filter(a => a && typeof a === 'object')
+  : [];
+setAssets(validAssets.length > 0 ? validAssets : initialAssets);
           setCash(data.cash || "");
         } else {
           // Create new empty portfolio for the user
@@ -276,8 +296,17 @@ export default function AssetTable() {
     );
   };
   return (
-    <div className="asset-table-container">
-      <style jsx>{`
+    <div className="asset-table-outer" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className="asset-table-container" style={{ display: 'inline-block', width: 'auto', maxWidth: 'none', overflowX: 'visible' }}>
+      <style>{`
+        .asset-table {
+          table-layout: auto !important;
+          width: auto !important;
+          border-collapse: collapse;
+        }
+        .asset-table th, .asset-table td {
+          white-space: nowrap;
+        }
         .asset-actions {
           display: flex;
           gap: 1rem;
@@ -292,57 +321,28 @@ export default function AssetTable() {
           cursor: pointer;
           font-size: 1rem;
         }
-        .save-portfolio-btn:hover {
-          background-color: #218838;
-        }
 
-      `}</style>
-      <div className="cash-row" style={{ marginBottom: '1rem' }}>
-        <label htmlFor="cash" style={{ marginRight: '0.5rem' }}>Cash ($):</label>
-        <input
-          id="cash"
-          type="number"
-          min="0"
-          step="0.01"
-          value={cash}
-          onChange={(e) => setCash(e.target.value)}
-          placeholder="0.00"
-          style={{
-            padding: '0.5rem',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            width: '150px'
-          }}
-          disabled={isLoading}
-        />
-      </div>
-      <table className="asset-table">
-        <thead>
-          <tr>
-            <th>Ticker</th>
-            <th>Current Price</th>
-            <th>Avg Price</th>
-            <th>Holdings</th>
-            <th>Target %</th>
-            <th>Buy/Sell</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {assets.map((asset) => (
-            <AssetRow
-              key={asset.id}
-              asset={asset}
-              onChange={handleAssetChange}
-              onRemove={handleRemoveAsset}
-            />
-          ))}
-        </tbody>
-      </table>
-      <div className="asset-actions">
-        <button className="add-asset-btn" onClick={handleAddAsset}>
-          + Add Asset
-        </button>
+  `}</style>
+  <div className="cash-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', gap: '1rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      <label htmlFor="cash" style={{ marginRight: '0.5rem' }}>Cash ($):</label>
+      <input
+        id="cash"
+        type="number"
+        min="0"
+        step="0.01"
+        value={cash}
+        onChange={(e) => setCash(e.target.value)}
+        placeholder="0.00"
+        style={{
+          padding: '0.5rem',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          width: '150px'
+        }}
+        disabled={isLoading}
+      />
+    </div>
         <button 
           className="save-portfolio-btn" 
           onClick={handleSavePortfolio}
@@ -350,16 +350,92 @@ export default function AssetTable() {
           style={{
             backgroundColor: isLoading ? '#6c757d' : '#28a745',
             opacity: isLoading ? 0.7 : 1,
-            cursor: isLoading ? 'not-allowed' : 'pointer'
+            cursor: isLoading ? 'not-allowed' : 'pointer',
+            padding: '0.5rem 1.2rem',
+            borderRadius: '4px',
+            color: 'white',
+            fontWeight: 600,
+            border: 'none',
+            fontSize: '1rem'
           }}
         >
           {isLoading ? 'Saving...' : 'Save Portfolio'}
         </button>
       </div>
+      <table className="asset-table" style={{ tableLayout: 'auto', width: 'auto' }}>
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Current Price</th>
+            <th>Avg Price</th>
+            <th>Holdings</th>
+            <th>현재 비율 (%)</th>
+            <th>Target %</th>
+            <th>Buy/Sell</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody
+          onMouseEnter={() => setShowAddRow(true)}
+          onMouseLeave={() => setShowAddRow(false)}
+        >
+          {(() => {
+            // Calculate total portfolio value
+            const assetValues = assets.map(a => {
+              if (!a) return 0;
+              const price = a.currentPrice !== undefined ? parseFloat(a.currentPrice) : (a.price !== undefined ? parseFloat(a.price) : NaN);
+              const holding = parseFloat(a.holdings);
+              return (!isNaN(price) && !isNaN(holding)) ? price * holding : 0;
+            });
+            const totalAssetValue = assetValues.reduce((acc, v) => acc + v, 0);
+            const cashValue = parseFloat(cash) || 0;
+            const totalPortfolioValue = cashValue + totalAssetValue;
+            const rows = assets.map((asset, idx) => {
+              if (!asset) return null;
+              const price = asset.currentPrice !== undefined ? parseFloat(asset.currentPrice) : (asset.price !== undefined ? parseFloat(asset.price) : NaN);
+              const holding = parseFloat(asset.holdings);
+              const value = (!isNaN(price) && !isNaN(holding)) ? price * holding : 0;
+              const weight = totalPortfolioValue > 0 ? (value / totalPortfolioValue) * 100 : 0;
+              return (
+                <AssetRow
+                  key={asset.id}
+                  asset={asset}
+                  onChange={handleAssetChange}
+                  onRemove={handleRemoveAsset}
+                  assetWeight={weight}
+                />
+              );
+            });
+            if (assets.length === 0) {
+              rows.push(
+                <tr key="add-row" className="add-row" onClick={handleAddAsset}
+                  style={{ cursor: 'pointer', background: '#232323', color: '#ffc107', fontWeight: 600 }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '0.75rem 0' }}>
+                    + 자산 추가
+                  </td>
+                </tr>
+              );
+            } else if (showAddRow) {
+              rows.push(
+                <tr key="add-row" className="add-row" onClick={handleAddAsset}
+                  style={{ cursor: 'pointer', background: '#232323', color: '#ffc107', fontWeight: 600 }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '0.75rem 0' }}>
+                    + 자산 추가
+                  </td>
+                </tr>
+              );
+            }
+            return rows;
+          })()}
+        </tbody>
+      </table>
+
       <LoginModal 
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+      </div>
     </div>
   );
 }

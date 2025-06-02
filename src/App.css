@@ -188,6 +188,44 @@ body {
   cursor: pointer;
   outline: none;
 }
+.feedback-btn-navbar {
+  background: #FFB000;
+  color: #171515;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-left: 16px;
+  box-shadow: 0 2px 8px rgba(23,21,21,0.10);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+.feedback-btn-navbar:hover, .feedback-btn-navbar:focus {
+  background: #7ED957;
+  color: #171515;
+  box-shadow: 0 4px 16px rgba(126,217,87,0.15);
+}
+
+.user-profile-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .feedback-btn-navbar {
+    font-size: 0.97rem;
+    padding: 7px 12px;
+    margin-left: 8px;
+    min-width: 70px;
+  }
+  .user-profile-bar {
+    gap: 6px;
+  }
+}
 .feedback-btn svg {
   display: block;
 }
