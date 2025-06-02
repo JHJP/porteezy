@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/porteezy/static/css/main.466b53f5.css",
+    "main.js": "/porteezy/static/js/main.b1cfd57d.js",
+    "index.html": "/porteezy/index.html",
+    "main.466b53f5.css.map": "/porteezy/static/css/main.466b53f5.css.map",
+    "main.b1cfd57d.js.map": "/porteezy/static/js/main.b1cfd57d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.466b53f5.css",
+    "static/js/main.b1cfd57d.js"
+  ]
+}
